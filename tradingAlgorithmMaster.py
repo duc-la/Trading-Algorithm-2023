@@ -22,15 +22,15 @@ class tradingAlgorithmMaster:
         # Start, end, and interval
         # Current Data Folder
         self.start = int(time.mktime(datetime.datetime(2023, 3, 20, 23, 59).timetuple()))
-        self.end = int(time.mktime(datetime.datetime(2024, 2, 12, 23, 59).timetuple()))
+        self.end = int(time.mktime(datetime.datetime(2024, 2, 21, 23, 59).timetuple()))
 
         # 7 year testing
         #self.start = int(time.mktime(datetime.datetime(2012, 2, 4, 23, 59).timetuple()))
         #self.end = int(time.mktime(datetime.datetime(2019, 2, 4, 23, 59).timetuple()))
 
         # 2019 to 2020 Data
-        # self.start = int(time.mktime(datetime.datetime(2019, 2, 4, 23, 59).timetuple()))
-        # self.end = int(time.mktime(datetime.datetime(2020, 11, 13, 23, 59).timetuple()))
+        #self.start = int(time.mktime(datetime.datetime(2019, 2, 4, 23, 59).timetuple()))
+        #self.end = int(time.mktime(datetime.datetime(2020, 11, 13, 23, 59).timetuple()))
 
         self.interval = '1d'  # 1w, 1m
         self.currentNet = 3000  # Original is 3000, but with margin 9000 because BP is 2
@@ -47,6 +47,7 @@ class tradingAlgorithmMaster:
         self.shortProfit2 = 0
         self.shortLoss1 = 0
         self.shortLoss2 = 0
+        self.risk = .01
 
     def manageLongTrades(self, stock, currentDate):
         # Consider new trade because isn't currently an open trade
@@ -60,7 +61,7 @@ class tradingAlgorithmMaster:
                 self.openTradesMap[stock.stockName] = openTradeClass.openTrade(stock.stockData["Date"][i],
                                                                                stock.stockData["Adj Close"][i],
                                                                                stock.atr14Data[i - 13],
-                                                                               self.currentNet * .01,
+                                                                               self.currentNet * self.risk,
                                                                                stock.stockData["Low"][i],
                                                                                self.cashAvailable)
                 print("OPENED LONG: " + str(stock.stockName) + " AT PRICE: " + str(
@@ -93,7 +94,7 @@ class tradingAlgorithmMaster:
                 self.openTradesMap[stock.stockName] = openTradeClass.openTrade(stock.stockData["Date"][i],
                                                                                stock.stockData["Adj Close"][i],
                                                                                stock.atr14Data[i - 13],
-                                                                               self.currentNet * -.01,
+                                                                               self.currentNet * -self.risk,
                                                                                stock.stockData["Low"][i],
                                                                                self.cashAvailable)
                 print("OPENED SHORT: " + str(stock.stockName) + " AT PRICE: " + str(
@@ -334,18 +335,24 @@ class tradingAlgorithmMaster:
         # Change S&P 500 and Nasdaq Data for 2018 to 2022 to 2023 Data for 2010 data all
         nasdaq = indexClass.Index(pd.read_csv(os.path.join(directory, f'QQQ.csv')), "QQQ")
         sp = indexClass.Index(pd.read_csv(os.path.join(directory, f'SPY.csv')), "SPY")
+        previousNet = self.currentNet
 
         for i in range(199, len(nasdaq.indexData)):
-            # Update cash every time
-            self.cashAvailable = self.currentNet * 3 - (self.currentNet * 3 - self.cashAvailable)
+            # Update cash every time for margin
+            self.cashAvailable = self.cashAvailable + (self.currentNet - previousNet) * 3
+
+            previousNet = self.currentNet
+
+            #self.cashAvailable = self.currentNet * 3 - (self.currentNet * 3 - self.cashAvailable)
             print(nasdaq.indexData["Date"][i])
             # Every time we use margin (available cash is less than twice the current net worth)
             if (self.cashAvailable <= self.currentNet * 2):
-                print("Interest Charged!")
-                self.cashAvailable = self.cashAvailable - (6000 - self.cashAvailable) * (.0974 / 250)
-                self.currentNet = self.currentNet - (6000 - self.cashAvailable) * (.0974 / 250)
+                 print("Interest Charged!")
+                 self.currentNet = self.currentNet - (6000 - self.cashAvailable) * (.0974 / 250)
+                 self.cashAvailable = self.cashAvailable - (6000 - self.cashAvailable) * (.0974 / 250)
 
             print("Available cash " + str(self.cashAvailable))
+            print("Current Net " + str(self.currentNet))
 
             currentDate = nasdaq.indexData["Date"][i]
 
@@ -404,6 +411,7 @@ class tradingAlgorithmMaster:
                   " Quantity: " + str(self.openTradesMap[key].quantity) + "Time: " + str(
                 self.openTradesMap[key].fillTime) + "\n")
 
+        print("CURRENT NET")
         print(self.currentNet)
 
         print("\nTRADE STATS")

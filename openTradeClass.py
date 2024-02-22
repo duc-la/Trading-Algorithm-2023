@@ -4,7 +4,8 @@ class openTrade:
         self.fillPrice = fillPrice
 
         self.cashRisk = cashRisk
-        self.marginLimitQuantity = cashAvailable * 2
+        self.marginLimitQuantity = cashAvailable #* 2
+        self.profitMultiplier = 1.5
         self.firstFill = True
 
         if cashRisk > 0:
@@ -19,13 +20,13 @@ class openTrade:
 
 
     def modifyProfit(self):
-        print(self.profit)
+        #print(self.profit)
         self.firstFill = False
         if self.cashRisk > 0:
-            self.profit = self.fillPrice + (self.fillPrice - self.loss) * 1.5
+            self.profit = self.fillPrice + (self.fillPrice - self.loss) * self.profitMultiplier
         else:
-            self.profit = self.fillPrice - (self.loss+self.fillPrice) * 1.5
+            self.profit = self.fillPrice - (self.loss+self.fillPrice) * self.profitMultiplier
 
-        print(self.profit)
+        #print(self.profit)
         self.quantity = int(self.quantity * .5)
         self.loss = self.fillPrice
