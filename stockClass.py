@@ -12,6 +12,7 @@ class Stock:
         #Stock Data
         self.stockData = stockDF
         self.stockName = stockTicker
+        self.dateOffset = None
         self.setOffSet()
 
         #EMA

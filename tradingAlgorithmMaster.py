@@ -22,18 +22,22 @@ class tradingAlgorithmMaster:
         # Start, end, and interval
         # Current Data Folder
         self.start = int(time.mktime(datetime.datetime(2023, 3, 20, 23, 59).timetuple()))
-        self.end = int(time.mktime(datetime.datetime(2024, 2, 21, 23, 59).timetuple()))
+        self.end = int(time.mktime(datetime.datetime(2024, 5, 24, 23, 59).timetuple()))
 
-        # 7 year testing
+        #1990 Data for QQQ
+        #self.start = int(time.mktime(datetime.datetime(1990, 2, 4, 23, 59).timetuple()))
+        #self.end = int(time.mktime(datetime.datetime(2024, 2, 4, 23, 59).timetuple()))
+
+        # 7 year testing -> 9 year now technically
         #self.start = int(time.mktime(datetime.datetime(2012, 2, 4, 23, 59).timetuple()))
-        #self.end = int(time.mktime(datetime.datetime(2019, 2, 4, 23, 59).timetuple()))
+        #self.end = int(time.mktime(datetime.datetime(2023, 2, 4, 23, 59).timetuple()))
 
         # 2019 to 2020 Data
         #self.start = int(time.mktime(datetime.datetime(2019, 2, 4, 23, 59).timetuple()))
         #self.end = int(time.mktime(datetime.datetime(2020, 11, 13, 23, 59).timetuple()))
 
         self.interval = '1d'  # 1w, 1m
-        self.currentNet = 3000  # Original is 3000, but with margin 9000 because BP is 2
+        self.currentNet = 9000  # Original is 3000, but with margin 9000 because BP is 2
         self.cashAvailable = 9000
         self.openTradesMap = {}
         self.closedTrades = []
@@ -47,10 +51,13 @@ class tradingAlgorithmMaster:
         self.shortProfit2 = 0
         self.shortLoss1 = 0
         self.shortLoss2 = 0
-        self.risk = .01
+        self.risk = .02/3 #Risk is for $3000 dollar account
 
     def manageLongTrades(self, stock, currentDate):
         # Consider new trade because isn't currently an open trade
+        if stock.dateOffset is None:
+            return
+
         i = currentDate - stock.dateOffset
 
         if stock.stockName not in self.openTradesMap:
@@ -68,7 +75,12 @@ class tradingAlgorithmMaster:
                     stock.stockData['Adj Close'][i]) + " CHANGE IN CASH: " + \
                       str(self.openTradesMap[stock.stockName].quantity * round(
                           self.openTradesMap[stock.stockName].fillPrice, 2)) + \
-                      " QUANTITY: " + str(self.openTradesMap[stock.stockName].quantity))
+                      " QUANTITY: " + str(self.openTradesMap[stock.stockName].quantity) + \
+                      " LOSS1: " + str(self.openTradesMap[stock.stockName].loss) + \
+                      " PROFIT1: " + str(self.openTradesMap[stock.stockName].profit) +\
+                      " PROFIT2: " + str(self.openTradesMap[stock.stockName].fillPrice + (self.openTradesMap[stock.stockName].fillPrice - self.openTradesMap[stock.stockName].loss) * self.openTradesMap[stock.stockName].profitMultiplier)
+                      )
+
                 self.cashAvailable = self.cashAvailable - self.openTradesMap[stock.stockName].quantity * round(
                     self.openTradesMap[stock.stockName].fillPrice, 2)
 
@@ -77,6 +89,8 @@ class tradingAlgorithmMaster:
             self.manageOpenPositions(stock, i)
 
     def manageShortTrades(self, stock, currentDate):
+        if stock.dateOffset is None:
+            return
 
         i = currentDate - stock.dateOffset
 
@@ -101,7 +115,10 @@ class tradingAlgorithmMaster:
                     stock.stockData['Adj Close'][i]) + " CHANGE IN CASH: " + \
                       str(self.openTradesMap[stock.stockName].quantity * round(
                           self.openTradesMap[stock.stockName].fillPrice, 2)) + \
-                      " QUANTITY: " + str(self.openTradesMap[stock.stockName].quantity))
+                      " QUANTITY: " + str(self.openTradesMap[stock.stockName].quantity) + \
+                      " LOSS1: " + str(self.openTradesMap[stock.stockName].loss) + \
+                      " PROFIT1: " + str(self.openTradesMap[stock.stockName].profit)
+                      )
                 self.cashAvailable = self.cashAvailable + self.openTradesMap[stock.stockName].quantity * round(
                     self.openTradesMap[stock.stockName].fillPrice, 2)
 
@@ -116,11 +133,18 @@ class tradingAlgorithmMaster:
                 (self.openTradesMap[stock.stockName].cashRisk > 0) and
                 (stock.stockData["Low"][i] <= self.openTradesMap[stock.stockName].loss)
         ):
-            close = closedTradeClass.closedTrade(round(self.openTradesMap[stock.stockName].fillPrice, 2),
-                                                 round(self.openTradesMap[stock.stockName].loss, 2),
-                                                 self.openTradesMap[stock.stockName].quantity,
-                                                 self.openTradesMap[stock.stockName].fillTime,
-                                                 stock.stockData["Date"][i], stock.stockName)
+            if (stock.stockData["Open"][i] <= self.openTradesMap[stock.stockName].loss):
+                close = closedTradeClass.closedTrade(round(self.openTradesMap[stock.stockName].fillPrice, 2),
+                                                     round(stock.stockData["Open"][i], 2),
+                                                     self.openTradesMap[stock.stockName].quantity,
+                                                     self.openTradesMap[stock.stockName].fillTime,
+                                                     stock.stockData["Date"][i], stock.stockName)
+            else:
+                close = closedTradeClass.closedTrade(round(self.openTradesMap[stock.stockName].fillPrice, 2),
+                                                     round(self.openTradesMap[stock.stockName].loss, 2),
+                                                     self.openTradesMap[stock.stockName].quantity,
+                                                     self.openTradesMap[stock.stockName].fillTime,
+                                                     stock.stockData["Date"][i], stock.stockName)
             print(
                 "CLOSED LONG LOSS: " + str(close.stockName) +
                 " AT PRICE: " + str(close.closedPrice) +
@@ -128,7 +152,8 @@ class tradingAlgorithmMaster:
                 " OPENED DATE: " + str(close.startDate) +
                 " CLOSED DATE: " + str(close.endDate) +
                 " CASH GAIN: " + str(round(close.closedPrice * close.quantity, 2)) +
-                " QUANTITY: " + str(close.quantity))
+                " QUANTITY: " + str(close.quantity)
+            )
 
             if (close.change * -1 < .005 * self.currentNet):
                 self.longLoss2 += 1
@@ -147,11 +172,18 @@ class tradingAlgorithmMaster:
                 (self.openTradesMap[stock.stockName].cashRisk < 0) and
                 (stock.stockData["High"][i] >= self.openTradesMap[stock.stockName].loss)
         ):
-            close = closedTradeClass.closedTrade(round(self.openTradesMap[stock.stockName].fillPrice, 2),
-                                                 round(self.openTradesMap[stock.stockName].loss, 2),
-                                                 self.openTradesMap[stock.stockName].quantity,
-                                                 self.openTradesMap[stock.stockName].fillTime,
-                                                 stock.stockData["Date"][i], stock.stockName)
+            if (stock.stockData["Open"][i] >= self.openTradesMap[stock.stockName].loss):
+                close = closedTradeClass.closedTrade(round(self.openTradesMap[stock.stockName].fillPrice, 2),
+                                                     round(stock.stockData["Open"][i], 2),
+                                                     self.openTradesMap[stock.stockName].quantity,
+                                                     self.openTradesMap[stock.stockName].fillTime,
+                                                     stock.stockData["Date"][i], stock.stockName)
+            else:
+                close = closedTradeClass.closedTrade(round(self.openTradesMap[stock.stockName].fillPrice, 2),
+                                                     round(self.openTradesMap[stock.stockName].loss, 2),
+                                                     self.openTradesMap[stock.stockName].quantity,
+                                                     self.openTradesMap[stock.stockName].fillTime,
+                                                     stock.stockData["Date"][i], stock.stockName)
             print(
                 "CLOSED SHORT LOSS: " + str(close.stockName) +
                 " AT PRICE: " + str(close.closedPrice) +
@@ -292,6 +324,7 @@ class tradingAlgorithmMaster:
         return low
 
     def getData(self):
+        #backTestList = set(["DTV", "FSLR", "VIA", "VIAB", "TEVA", "TCOM", "INFY", "EQIX"])
         backTestList = set(webscrapeIndices.getNasdaq100List())
 
         webscrapeIndices.getYFData("QQQ", self.start, self.end, self.interval, directory)
@@ -318,6 +351,12 @@ class tradingAlgorithmMaster:
     def backtest(self):
         # Union both S&P 500 and Nasdaq 100 Data
         backTestList = set(webscrapeIndices.getNasdaq100List())
+
+
+        #Add stocks that were removed from index yearly
+        #Delisted and went private: DTV, VIA, VIAB, Catamaran, DISCA, DISCB
+        #backTestList = set(["DTV", "FSLR", "VIA", "VIAB", "TEVA", "TCOM", "INFY", "EQIX"])
+
         stocks = []
         stockMap = {}
 
@@ -335,21 +374,32 @@ class tradingAlgorithmMaster:
         # Change S&P 500 and Nasdaq Data for 2018 to 2022 to 2023 Data for 2010 data all
         nasdaq = indexClass.Index(pd.read_csv(os.path.join(directory, f'QQQ.csv')), "QQQ")
         sp = indexClass.Index(pd.read_csv(os.path.join(directory, f'SPY.csv')), "SPY")
-        previousNet = self.currentNet
+
+        #previousNet = self.currentNet
 
         for i in range(199, len(nasdaq.indexData)):
-            # Update cash every time for margin
-            self.cashAvailable = self.cashAvailable + (self.currentNet - previousNet) * 3
+            if self.currentNet <= 8000:
+                print("Theoretical Bankruptcy")
+                break
+            #Monthly deposits
+            # if (i % 20 == 0):
+            #     self.currentNet = self.currentNet + 100
 
-            previousNet = self.currentNet
+            # Update cash every time for margin
+            #self.cashAvailable = self.cashAvailable + (self.currentNet - previousNet) * 3
+
+            #previousNet = self.currentNet
 
             #self.cashAvailable = self.currentNet * 3 - (self.currentNet * 3 - self.cashAvailable)
             print(nasdaq.indexData["Date"][i])
+
+            if (self.cashAvailable > self.currentNet):
+                self.cashAvailable = self.currentNet
             # Every time we use margin (available cash is less than twice the current net worth)
-            if (self.cashAvailable <= self.currentNet * 2):
-                 print("Interest Charged!")
-                 self.currentNet = self.currentNet - (6000 - self.cashAvailable) * (.0974 / 250)
-                 self.cashAvailable = self.cashAvailable - (6000 - self.cashAvailable) * (.0974 / 250)
+            marginUsed =  (self.currentNet*2/3) - self.cashAvailable#self.currentNet*2 - self.cashAvailable
+            if (marginUsed > 0):
+                print("Interest Charged: " + str((marginUsed) * (.0974 / 250)))
+                self.currentNet = self.currentNet - (marginUsed) * (.0974 / 250)
 
             print("Available cash " + str(self.cashAvailable))
             print("Current Net " + str(self.currentNet))
@@ -395,21 +445,24 @@ class tradingAlgorithmMaster:
                     if (i < len(stockMap[openList[l]].stockData)):
                         self.manageOpenPositions(stockMap[openList[l]], k)
 
-        print("\n\nCLOSED POSITIONS")
-
-        for i in range(0, len(self.closedTrades)):
-            print("Ticker " + str(self.closedTrades[i].stockName) + " Opened: " + str(self.closedTrades[i].startPrice) + \
-                  " For -" + str(self.closedTrades[i].startPrice * self.closedTrades[i].quantity) + " Closed: " + str(
-                self.closedTrades[i].closedPrice) + "For +" + str(
-                self.closedTrades[i].closedPrice * self.closedTrades[i].quantity) + \
-                  "Change: " + str(self.closedTrades[i].change) + " Quantity: " + str(
-                self.closedTrades[i].quantity) + "\n")
+        # print("\n\nCLOSED POSITIONS")
+        #
+        # for i in range(0, len(self.closedTrades)):
+        #     print("Ticker " + str(self.closedTrades[i].stockName) + " Opened: " + str(self.closedTrades[i].startPrice) + \
+        #           " For -" + str(self.closedTrades[i].startPrice * self.closedTrades[i].quantity) + " Closed: " + str(
+        #         self.closedTrades[i].closedPrice) + "For +" + str(
+        #         self.closedTrades[i].closedPrice * self.closedTrades[i].quantity) + \
+        #           "Change: " + str(self.closedTrades[i].change) + " Quantity: " + str(
+        #         self.closedTrades[i].quantity) + "\n")
 
         print("\nCURRENT OPEN POSITIONS")
         for key in self.openTradesMap:
             print("Ticker " + str(key) + " Opened: " + str(self.openTradesMap[key].fillPrice) + \
-                  " Quantity: " + str(self.openTradesMap[key].quantity) + "Time: " + str(
-                self.openTradesMap[key].fillTime) + "\n")
+                  " Quantity: " + str(self.openTradesMap[key].quantity) + " Time: " + str(
+                self.openTradesMap[key].fillTime) + \
+                  " SL: " + str(self.openTradesMap[key].loss) + \
+                  " TP1: " + str(self.openTradesMap[key].profit) + \
+                  "TP2: " + str(self.openTradesMap[key].fillPrice + (self.openTradesMap[key].profit - self.openTradesMap[key].fillPrice) * 1.5) + "\n")
 
         print("CURRENT NET")
         print(self.currentNet)

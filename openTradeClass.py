@@ -10,7 +10,7 @@ class openTrade:
 
         if cashRisk > 0:
             self.loss = cond - atr
-            self.profit = round(fillPrice + (fillPrice - self.loss), 2)
+            self.profit = fillPrice + (fillPrice - self.loss) #round(fillPrice + (fillPrice - self.loss), 2)
             self.quantity = min(int(cashRisk / (self.fillPrice - self.loss)), int(self.marginLimitQuantity / self.fillPrice))
 
         else:
