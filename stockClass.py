@@ -15,6 +15,7 @@ class Stock:
         self.dateOffset = None
         self.setOffSet()
 
+
         #EMA
         self.ema200Data = calculateEMA(stockDF, 200)
 
@@ -61,7 +62,7 @@ class Stock:
         for j in range(timePeriod, len(stockDF["High"])):
             atrData.append((atrData[j-timePeriod]*(timePeriod-1) + max(stockDF["High"][j] - stockDF["Low"][j], abs(stockDF["High"][j] - stockDF["Adj Close"][j-1]), abs(stockDF["Low"][j] - stockDF["Adj Close"][j-1])))/timePeriod)
 
-        return atrData;
+        return atrData
 
 
     def calculateMACD(self, ema1, ema2):

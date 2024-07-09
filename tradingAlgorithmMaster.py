@@ -21,8 +21,8 @@ class tradingAlgorithmMaster:
     def __init__(self):
         # Start, end, and interval
         # Current Data Folder
-        self.start = int(time.mktime(datetime.datetime(2023, 3, 20, 23, 59).timetuple()))
-        self.end = int(time.mktime(datetime.datetime(2024, 5, 24, 23, 59).timetuple()))
+        self.start = int(time.mktime(datetime.datetime(2023, 3, 21, 23, 59).timetuple()))
+        self.end = int(time.mktime(datetime.datetime(2024, 7, 9, 23, 59).timetuple()))
 
         #1990 Data for QQQ
         #self.start = int(time.mktime(datetime.datetime(1990, 2, 4, 23, 59).timetuple()))
@@ -37,8 +37,8 @@ class tradingAlgorithmMaster:
         #self.end = int(time.mktime(datetime.datetime(2020, 11, 13, 23, 59).timetuple()))
 
         self.interval = '1d'  # 1w, 1m
-        self.currentNet = 9000  # Original is 3000, but with margin 9000 because BP is 2
-        self.cashAvailable = 9000
+        self.currentNet = 10000000  # Original is 3000, but with margin 9000 because BP is 2
+        self.cashAvailable = 10000000
         self.openTradesMap = {}
         self.closedTrades = []
 
@@ -51,7 +51,7 @@ class tradingAlgorithmMaster:
         self.shortProfit2 = 0
         self.shortLoss1 = 0
         self.shortLoss2 = 0
-        self.risk = .02/3 #Risk is for $3000 dollar account
+        self.risk = .01/10 #Risk is for $3000 dollar account
 
     def manageLongTrades(self, stock, currentDate):
         # Consider new trade because isn't currently an open trade
@@ -363,7 +363,7 @@ class tradingAlgorithmMaster:
         # Put all stock objects into a list of stocks
         count = 0
         for ticker in backTestList:
-            if os.path.exists(os.path.join(directory, f'{ticker}.csv')):
+            if os.path.exists(os.path.join(directory, f'{ticker}.csv')) and len(pd.read_csv(os.path.join(directory, f'{ticker}.csv'))) > 26:
                 stocks.append(Stock(pd.read_csv(os.path.join(directory, f'{ticker}.csv')), ticker))
 
         for i in range(0, len(stocks)):
