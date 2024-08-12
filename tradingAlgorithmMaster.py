@@ -22,7 +22,10 @@ class tradingAlgorithmMaster:
         # Start, end, and interval
         # Current Data Folder
         self.start = int(time.mktime(datetime.datetime(2023, 3, 21, 23, 59).timetuple()))
-        self.end = int(time.mktime(datetime.datetime(2024, 7, 9, 23, 59).timetuple()))
+        self.end = int(time.mktime(datetime.datetime(2024, 8, 12, 23, 59).timetuple()))
+
+        #self.start = int(time.mktime(datetime.datetime(2022, 3, 21, 23, 59).timetuple()))
+        #self.end = int(time.mktime(datetime.datetime(2023, 12, 31, 23, 59).timetuple()))
 
         #1990 Data for QQQ
         #self.start = int(time.mktime(datetime.datetime(1990, 2, 4, 23, 59).timetuple()))
@@ -324,8 +327,23 @@ class tradingAlgorithmMaster:
         return low
 
     def getData(self):
+        # Companies that have been around long enough (survivorship bias)
+        # AAPL 1985, MSFT 2000s, NVDA 2001, GOOG 2005, AMZN 1988, META 2012, TSLA 2013, AVGO 2000, COST 1985, ASML 2017
+        # NFLX 2013, AZN 2022, ADBE 1996
+        # backTestList = set(["AAPL", "MSFT", "NVDA", "GOOG", "GOOGL", "AMZN", "META", "TSLA", "AVGO", "COST", "ASML", "NFLX",
+        #                    "ADBE", ])
+
+
         #backTestList = set(["DTV", "FSLR", "VIA", "VIAB", "TEVA", "TCOM", "INFY", "EQIX"])
+
+
         backTestList = set(webscrapeIndices.getNasdaq100List())
+        #backTestList = set(webscrapeIndices.getSP500List())
+        #backTestList = set(webscrapeIndices.getNasdaq100List())
+        #listToRemove = ["GEHC", "ON", "TTD", "CDW", "CCEP", "DASH", "MDB", "ROP", "SPLK", "LIN", "ARM", "SMCI"]
+
+        #Replaced in 2023
+        #backTestList = set(["FI", "RIVN", "ATVI", "EBAY", "ENPH", "JD", "LCID", "ZM", "SGEN"])
 
         webscrapeIndices.getYFData("QQQ", self.start, self.end, self.interval, directory)
         webscrapeIndices.getYFData("SPY", self.start, self.end, self.interval, directory)

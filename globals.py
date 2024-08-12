@@ -4,6 +4,9 @@
 #directory = f'2019 to 2020 Data'
 
 directory = f'2023 to 2024 Data'
+#directory = f'2022 to 2023 Data'
+#directory = f'2023 Data'
+#directory = f'2024 SP Data'
 totalLoss = 0
 total1Win = 0
 total2Win = 0
